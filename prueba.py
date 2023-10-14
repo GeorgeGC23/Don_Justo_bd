@@ -1,84 +1,54 @@
-import sqlite3
+import openpyxl
+from openpyxl.styles import Font
 from datetime import datetime
 
-# ... (Código de inicialización de la base de datos y las funciones de exportación a XLSX) ...
+class LogicaDeNegocios:
+    # ...
 
-# Función para registrar una compra y actualizar el almacen y el archivo XLSX
-def registrar_compra():
-    proveedor = input("Ingrese el nombre del proveedor: ")
-    producto = input("Ingrese el nombre del producto comprado: ")
-    cantidad = int(input("Ingrese la cantidad comprada: "))
-    precio = float(input("Ingrese el precio unitario: "))
-    fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    def exportar_ventas_a_xlsx(self):
+        # Obtener la fecha actual en formato YYYY-MM-DD
+        fecha_actual = datetime.now().strftime('%Y-%m-%d')
 
-    conn = sqlite3.connect('ventas.db')
-    cursor = conn.cursor()
+        # Crear un nuevo archivo Excel
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = fecha_actual  # Usar la fecha actual como título de la hoja
 
-    # Registrar la compra en la tabla 'compras'
-    cursor.execute('''
-        INSERT INTO compras (proveedor, producto, cantidad, precio, fecha)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (proveedor, producto, cantidad, precio, fecha))
+        # Agregar las ventas registradas en el día
+        cursor = self.base_de_datos.cursor
+        cursor.execute('SELECT producto, cantidad, precio_unitario FROM ventas WHERE fecha LIKE ?', (f'{fecha_actual}%',))
+        ventas_del_dia = cursor.fetchall()
 
-    # Verificar si el producto existe en el almacen
-    cursor.execute('SELECT id_producto, cantidad FROM almacen WHERE producto = ?', (producto,))
-    almacen_info = cursor.fetchone()
+        # Agregar las ventas al archivo Excel
+        sheet['A1'] = 'Producto'
+        sheet['B1'] = 'Cantidad'
+        sheet['C1'] = 'Precio Unitario'
+        sheet['D1'] = 'Subtotal'
 
-    if almacen_info:
-        # Si el producto existe en el almacen, actualizar la cantidad
-        id_producto = almacen_info[0]
-        nueva_cantidad = almacen_info[1] + cantidad
-        cursor.execute('''
-            UPDATE almacen
-            SET cantidad = ?
-            WHERE id_producto = ?
-        ''', (nueva_cantidad, id_producto))
-    else:
-        # Si el producto no existe en el almacen, SQLite generará un ID único automáticamente
-        cursor.execute('''
-            INSERT INTO almacen (producto, cantidad)
-            VALUES (?, ?)
-        ''', (producto, cantidad))
+        total_ventas_del_dia = 0  # Inicializar el total de ventas del día
 
-    conn.commit()
-    conn.close()
+        for i, (producto, cantidad, precio_unitario) in enumerate(ventas_del_dia, 2):
+            sheet[f'A{i}'] = producto
+            sheet[f'B{i}'] = cantidad
+            sheet[f'C{i}'] = precio_unitario
+            subtotal = cantidad * precio_unitario
+            sheet[f'D{i}'] = subtotal
+            total_ventas_del_dia += subtotal
 
-    # Exportar los datos actualizados del almacen y las compras a los archivos XLSX
-    exportar_almacen_a_xlsx()
-    exportar_compras_a_xlsx()
+        # Calcular y agregar la suma total de ventas del día
+        total_row = len(ventas_del_dia) + 3  # Separación de dos celdas y una fila adicional
+        sheet[f'A{total_row}'] = 'Total del Día:'
+        sheet[f'D{total_row}'] = total_ventas_del_dia
 
-    print("Compra registrada correctamente.")
+        # Establecer el formato de la celda para el total
+        total_cell = sheet[f'D{total_row}']
+        total_cell.font = Font(bold=True)
 
-# ... (Resto del código, incluyendo la función del menú principal) ...
+        # Guardar el archivo Excel
+        archivo_xlsx = f'ventas_{fecha_actual}.xlsx'
+        workbook.save(archivo_xlsx)
 
-if __name__ == '__main__':
-    crear_tabla_almacen()
-    inicializar_base_de_datos()
-    menu_principal()
+        print(f"Reporte de ventas del día {fecha_actual} exportado a {archivo_xlsx}")
 
-
-
-# Función para ver el contenido del almacen
-def ver_almacen():
-    conn = sqlite3.connect('ventas.db')
-    cursor = conn.cursor()
-
-    cursor.execute('SELECT id_producto, producto, cantidad, proveedor FROM almacen')
-    filas = cursor.fetchall()
-
-    if not filas:
-        print("El almacen está vacío.")
-    else:
-        print("Contenido del Almacen:")
-        print("{:<15} {:<25} {:<10} {:<15}".format("ID Producto", "Producto", "Cantidad", "Proveedor"))
-        for fila in filas:
-            print("{:<15} {:<25} {:<10} {:<15}".format(fila[0], fila[1], fila[2], fila[3]))
-
-    conn.close()
-
-# ... (Resto del código, incluyendo la función del menú principal) ...
-
-if __name__ == '__main__':
-    crear_tabla_almacen()
-    inicializar_base_de_datos()
-    menu_principal()
+        # Cerrar la conexión a la base de datos
+        self.base_de_datos.conn.close()
