@@ -29,7 +29,6 @@ class BaseDeDatos:
         )
         ''')
 
-        # Cambia la definición de la tabla 'almacen' para agregar PRIMARY KEY
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS almacen (
             id_producto TEXT PRIMARY KEY,
@@ -40,7 +39,26 @@ class BaseDeDatos:
             proveedor TEXT NOT NULL
         )
         ''')
+        
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL
+            )
+        ''')
+        
+        self.conn.commit()        
 
+    def registrar_usuario(self, username, password):
+        self.cursor.execute("INSERT INTO usuarios (username, password) VALUES (?, ?)", (username, password))
+        self.conn.commit()
+
+    def autenticar_usuario(self, username, password):
+        self.cursor.execute("SELECT * FROM usuarios WHERE username = ? AND password = ?", (username, password))
+        usuario = self.cursor.fetchone()
+        return usuario
+    
     def generar_id_unico(self):
         self.cursor.execute('SELECT COUNT(*) FROM almacen')
         ultimo_registro = self.cursor.fetchone()[0]
