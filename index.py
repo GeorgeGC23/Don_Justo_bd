@@ -662,7 +662,7 @@ class MenuPrincipalUI:
                             if success:
                                 messagebox.showinfo("Éxito", f"Precio del producto con ID '{id_producto}' actualizado correctamente.")
                             else:
-                                messagebox.showwarning("Advertencia", "El producto no fue encontrado en la base de datos.")
+                                messagebox.showwarning("Advertencia", "El pproducto no fue encontrado en la base de datos.")
                         except ValueError:
                             messagebox.showwarning("Advertencia", "Por favor, ingrese un valor válido para el precio.")
                     else:
