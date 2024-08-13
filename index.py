@@ -629,7 +629,7 @@ class MenuPrincipalUI:
             tabla_productos.heading("Precio Unitario", text="Precio Unitario")
             tabla_productos.grid(row=1, column=0, columnspan=2)
 
-            # Configurar el ancho de las columnas
+            # Configurar el ancho de las columnas daskldjaslkj
             tabla_productos.column("#1", width=100)  # Ancho de la columna ID
             tabla_productos.column("#2", width=200)  # Ancho de la columna Producto
             tabla_productos.column("#3", width=100)  # Ancho de la columna Cantidad
